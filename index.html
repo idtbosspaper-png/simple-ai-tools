@@ -1,0 +1,410 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ibrahim Harris — Simple AI Tools</title>
+<style>
+  :root{
+    --bg:#0f1220;           /* dark background that still prints nicely */
+    --card:#12162a;
+    --text:#e9ecf8;
+    --muted:#9aa3b2;
+    --accent:#6aa6ff;
+    --line:#2b3152;
+    --ring:#4d7fff66;
+    --ok:#20c997;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0; padding:0; color:var(--text); background:var(--bg); font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif}
+  h1{font-weight:800; text-align:center; margin:28px 0 10px}
+  .subnav{color:var(--muted); text-align:center; font-size:14px; margin-bottom:20px}
+  .wrap{max-width:1200px; margin:0 auto; padding:14px}
+  .grid{
+    display:grid;
+    gap:16px;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width:900px){
+    .grid{grid-template-columns: 1fr 1fr}
+  }
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:16px;
+    box-shadow: 0 0 0 1px #00000010, 0 14px 30px #00000033 inset;
+  }
+  .card h2{margin:0 0 10px}
+  .muted{color:var(--muted)}
+  .row{display:flex; gap:10px; align-items:center}
+  .row > *{flex:1}
+  input[type="number"], input[type="text"]{
+    width:100%; padding:10px; border-radius:10px; border:1px solid var(--line);
+    background:transparent; color:var(--text); font:inherit;
+  }
+  input:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px var(--ring)}
+  .money{
+    display:grid; gap:12px;
+    grid-template-columns: 1.2fr 0.8fr 0.8fr;
+  }
+  .money .hdr{color:var(--muted); font-size:13px}
+  .totline{display:flex; justify-content:flex-end; gap:10px; align-items:center; border-top:1px dashed var(--line); padding-top:10px; margin-top:8px}
+  .badge{display:inline-flex; align-items:center; gap:8px; background:#0e2531; border:1px solid #114357; color:#9ee7ff; padding:8px 10px; border-radius:10px; font-weight:600}
+  .btn{
+    background:#202849; border:1px solid var(--line); color:var(--text); border-radius:10px; padding:8px 12px; cursor:pointer;
+  }
+  .btn:hover{filter:brightness(1.15)}
+  code{background:#0c1330; border:1px solid var(--line); color:#9ee7ff; padding:1px 6px; border-radius:6px}
+
+  /* ---------- Notepad Calculator ---------- */
+  .pad-wrap{position:relative; display:grid; grid-template-columns: 1fr 220px; gap:0}
+  .pad{
+    resize:vertical; min-height:340px;
+    border:1px solid var(--line);
+    border-right:none;
+    border-radius:12px 0 0 12px;
+    padding:14px 12px; font:18px/28px ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background:repeating-linear-gradient(#0e1430, #0e1430 27px, #10183f 28px);
+    color:var(--text);
+  }
+  .pad:focus{outline:none; border-color:var(--accent); box-shadow:0 0 0 4px var(--ring)}
+  .gutter{
+    user-select:none; pointer-events:none;
+    border:1px solid var(--line);
+    border-left:none;
+    border-radius:0 12px 12px 0;
+    padding:14px 12px;
+    font:18px/28px ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    background:repeating-linear-gradient(#0e1430, #0e1430 27px, #10183f 28px);
+    color:#fee29f;
+  }
+  .gutter .err{color:#ff8f8f}
+  .right{ text-align:right }
+  .small{font-size:12px}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Ibrahim Harris — Simple AI Tools</h1>
+    <div class="subnav">Notepad Calculator • Money Counter • USD ⇄ NGN Remit • Price / Discount / Sales-Tax</div>
+
+    <div class="grid">
+      <!-- =========================================================
+           CARD 1 — NOTEPAD CALCULATOR (live results in right gutter)
+      ========================================================== -->
+      <section class="card">
+        <h2>Notepad Calculator 2025</h2>
+        <div class="pad-wrap">
+          <textarea id="pad" class="pad" placeholder="Type math here...
+Examples:
+  1000-5/2
+  1,000,000/1512
+  245*(3+2)
+"></textarea>
+          <pre id="gutter" class="gutter right"></pre>
+        </div>
+        <div class="muted small" style="margin-top:8px">Live results appear on the right. Supports <code>+ - * / ( )</code> and commas.</div>
+      </section>
+
+      <!-- =========================================================
+           CARD 2 — MONEY COUNTER (bills + misc)
+      ========================================================== -->
+      <section class="card" id="money-card">
+        <h2>Money Counter</h2>
+        <div class="money hdr">
+          <div>Denomination</div><div>Qty</div><div>Subtotal</div>
+        </div>
+        <div id="money-rows"></div>
+        <div class="row" style="margin-top:8px">
+          <label class="row">
+            <span class="muted">Misc (coins / adjustments)</span>
+            <input id="misc" type="number" step="0.01" inputmode="decimal" placeholder="0.00" />
+          </label>
+        </div>
+        <div class="totline">
+          <span class="muted">Grand total</span>
+          <span class="badge" id="grandTotal">$0.00</span>
+          <button class="btn" id="clearBills">Clear</button>
+          <button class="btn" id="printBills">Print</button>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           CARD 3 — USD ⇄ NGN REMIT CALCULATOR
+      ========================================================== -->
+      <section class="card" id="remit-card">
+        <h2>USD ⇄ NGN Remit Calculator</h2>
+
+        <div style="display:grid; gap:12px">
+          <!-- Row: Rate -->
+          <label>
+            <div class="muted">Rate — <b>1 USD =</b> (NGN)</div>
+            <input id="rate" type="number" step="0.01" min="0" inputmode="decimal"
+                   placeholder="e.g., 1600">
+          </label>
+
+          <div style="display:grid; gap:10px; grid-template-columns: 1fr 1fr;">
+            <!-- Left block: USD -> NGN -->
+            <div style="border:1px solid var(--line); border-radius:12px; padding:12px">
+              <div class="muted" style="margin-bottom:6px"><b>Send USD → Get NGN</b></div>
+              <label>
+                <div class="muted">Sending Amt (USD)</div>
+                <input id="usd" type="number" step="0.01" min="0" inputmode="decimal"
+                       placeholder="Enter USD">
+              </label>
+
+              <div style="margin-top:10px; font-size:14px">
+                <div>Foreign Amt (NGN): <b id="ngnOut">₦0</b></div>
+                <div>Fee (USD): <b id="feeOut">$0.00</b></div>
+                <div>Total Due (USD): <b id="dueOut">$0.00</b></div>
+              </div>
+            </div>
+
+            <!-- Right block: NGN target -> how much to collect -->
+            <div style="border:1px solid var(--line); border-radius:12px; padding:12px">
+              <div class="muted" style="margin-bottom:6px"><b>Target NGN → Collect USD</b></div>
+              <label>
+                <div class="muted">Desired NGN</div>
+                <input id="ngnTarget" type="number" step="0.01" min="0" inputmode="decimal"
+                       placeholder="Enter NGN">
+              </label>
+
+              <div style="margin-top:10px; font-size:14px">
+                <div>USD to remit (before fee): <b id="usdRemit">$0.00</b></div>
+                <div>Fee (USD): <b id="feeTarget">$0.00</b></div>
+                <div>Total to collect (USD): <b id="dueTarget">$0.00</b></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="muted small" style="margin-top:4px">
+            Fee tiers: $1–$50 → $5 • $51–$500 → $10 • $501–$1000 → $15
+            (Assumed &gt;$1000 stays $15. Tell me if you want a different rule.)
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           CARD 4 — QUICK PRICE / DISCOUNT / TAX
+      ========================================================== -->
+      <section class="card" id="price-card">
+        <h2>Price • Discount • Sales-Tax</h2>
+        <div class="row">
+          <label>
+            <div class="muted">Unit Price ($)</div>
+            <input id="p_price" type="number" step="0.01" min="0" placeholder="0.00" />
+          </label>
+          <label>
+            <div class="muted">Qty</div>
+            <input id="p_qty" type="number" step="1" min="0" placeholder="1" />
+          </label>
+        </div>
+        <div class="row">
+          <label>
+            <div class="muted">Discount %</div>
+            <input id="p_disc" type="number" step="0.01" min="0" placeholder="0" />
+          </label>
+          <label>
+            <div class="muted">Sales Tax %</div>
+            <input id="p_tax" type="number" step="0.01" min="0" placeholder="10.25" />
+          </label>
+        </div>
+        <div style="margin-top:10px; font-size:14px; display:grid; gap:6px">
+          <div>Sub-total: <b id="p_sub">$0.00</b></div>
+          <div>Discount: <b id="p_disc_amt" style="color:#ffb3b3">$0.00</b></div>
+          <div>Tax: <b id="p_tax_amt" style="color:#9ee7ff">$0.00</b></div>
+          <div style="border-top:1px dashed var(--line); padding-top:8px">Total: <b class="badge" id="p_total">$0.00</b></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="muted small" style="text-align:center; margin:18px 0 8px">Developed by Ibrahim Harris</div>
+  </div>
+
+<script>
+/* =========================================================
+   HELPER UTILITIES
+========================================================= */
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+const fmtUSD = v => isFinite(v) ? `$${Number(v).toFixed(2)}` : '$0.00';
+const fmtNGN = v => isFinite(v) ? '₦' + Number(v).toLocaleString(undefined, {maximumFractionDigits: 2}) : '₦0';
+
+/* =========================================================
+   CARD 1 — NOTEPAD CALCULATOR (live gutter results)
+   - Keeps caret behavior natural (textarea)
+   - No extra lines added; results render in the right gutter
+========================================================= */
+(function(){
+  const pad = $('#pad');
+  const gutter = $('#gutter');
+
+  function normalize(line){
+    // allow commas in numbers
+    return line.replace(/,/g,'').trim();
+  }
+  function tryEval(line){
+    if (!line) return '';
+    // Only basic arithmetic
+    if (!/^[\d\s+*\-\/().,]+$/.test(line)) return '';
+    try{
+      const value = Function(`"use strict"; return (${normalize(line)});`)();
+      if (typeof value === 'number' && isFinite(value)) {
+        // Pretty format with commas if large
+        const pretty = Math.abs(value) >= 1000
+          ? value.toLocaleString(undefined, {maximumFractionDigits: 12}).replace(/\.?0+$/,'')
+          : String(value).replace(/\.?0+$/,'');
+        return '= ' + pretty;
+      }
+    }catch(_){}
+    return '';
+  }
+  function render(){
+    const lines = pad.value.replace(/\r\n/g,'\n').split('\n');
+    const outs = lines.map(tryEval);
+    gutter.textContent = outs.join('\n');
+  }
+  pad.addEventListener('input', render);
+  pad.addEventListener('scroll', ()=> { gutter.scrollTop = pad.scrollTop; });
+  // initial
+  render();
+})();
+
+/* =========================================================
+   CARD 2 — MONEY COUNTER (bills + misc)
+========================================================= */
+(function(){
+  const bills = [100,50,20,10,5,1];
+  const rowsHost = $('#money-rows');
+  const misc = $('#misc');
+  const grandTotal = $('#grandTotal');
+  const clearBtn = $('#clearBills');
+  const printBtn = $('#printBills');
+
+  function rowTemplate(value){
+    const id = `b${value}`;
+    return `
+      <div class="money" data-value="${value}">
+        <div>$${value}</div>
+        <div><input id="${id}" type="number" step="1" min="0" value="0"></div>
+        <div class="right" id="${id}-sub">$0.00</div>
+      </div>
+    `;
+  }
+  rowsHost.innerHTML = bills.map(rowTemplate).join('');
+
+  function recalc(){
+    let total = 0;
+    bills.forEach(v=>{
+      const qty = parseFloat(($('#b'+v)?.value)||0) || 0;
+      const sub = v*qty;
+      total += sub;
+      $('#b'+v+'-sub').textContent = fmtUSD(sub);
+    });
+    const m = parseFloat(misc.value) || 0;
+    total += m;
+    grandTotal.textContent = fmtUSD(total);
+  }
+  // events
+  bills.forEach(v=> $('#b'+v).addEventListener('input', recalc));
+  misc.addEventListener('input', recalc);
+  clearBtn.addEventListener('click', ()=>{
+    bills.forEach(v=> $('#b'+v).value = 0);
+    misc.value = '';
+    recalc();
+  });
+  printBtn.addEventListener('click', ()=> window.print());
+  recalc();
+})();
+
+/* =========================================================
+   CARD 3 — USD ⇄ NGN REMIT
+========================================================= */
+(function(){
+  function feeFor(usd){
+    if (usd <= 0) return 0;
+    if (usd <= 50)  return 5;
+    if (usd <= 500) return 10;
+    if (usd <= 1000) return 15;
+    // > $1000: keep $15 unless you want another rule
+    return 15;
+  }
+  const rateEl = $('#rate');
+  const usdEl  = $('#usd');
+  const ngnOut = $('#ngnOut');
+  const feeOut = $('#feeOut');
+  const dueOut = $('#dueOut');
+
+  const ngnTargetEl = $('#ngnTarget');
+  const usdRemit = $('#usdRemit');
+  const feeTarget = $('#feeTarget');
+  const dueTarget = $('#dueTarget');
+
+  function updateUSDtoNGN(){
+    const rate = parseFloat(rateEl.value) || 0;
+    const usd  = parseFloat(usdEl.value)  || 0;
+    const ngn = usd * rate;
+    const fee = feeFor(usd);
+    const due = usd + fee;
+
+    ngnOut.textContent = fmtNGN(ngn);
+    feeOut.textContent = fmtUSD(fee);
+    dueOut.textContent = fmtUSD(due);
+  }
+
+  function updateNGNtoUSD(){
+    const rate = parseFloat(rateEl.value) || 0;
+    const ngn  = parseFloat(ngnTargetEl.value) || 0;
+    const usdBeforeFee = rate > 0 ? (ngn / rate) : 0;
+    const fee = feeFor(usdBeforeFee);
+    const due = usdBeforeFee + fee;
+
+    usdRemit.textContent = fmtUSD(usdBeforeFee);
+    feeTarget.textContent = fmtUSD(fee);
+    dueTarget.textContent = fmtUSD(due);
+  }
+
+  [rateEl, usdEl].forEach(el => el.addEventListener('input', updateUSDtoNGN));
+  [rateEl, ngnTargetEl].forEach(el => el.addEventListener('input', updateNGNtoUSD));
+  updateUSDtoNGN();
+  updateNGNtoUSD();
+})();
+
+/* =========================================================
+   CARD 4 — QUICK PRICE / DISCOUNT / TAX
+========================================================= */
+(function(){
+  const price = $('#p_price');
+  const qty   = $('#p_qty');
+  const disc  = $('#p_disc');
+  const tax   = $('#p_tax');
+
+  const subOut  = $('#p_sub');
+  const discOut = $('#p_disc_amt');
+  const taxOut  = $('#p_tax_amt');
+  const totOut  = $('#p_total');
+
+  function recalc(){
+    const p = parseFloat(price.value) || 0;
+    const q = Math.max(0, parseFloat(qty.value) || 0);
+    const d = Math.max(0, parseFloat(disc.value) || 0);
+    const t = Math.max(0, parseFloat(tax.value) || 0);
+
+    const sub = p*q;
+    const dAmt = sub * (d/100);
+    const afterDisc = sub - dAmt;
+    const tAmt = afterDisc * (t/100);
+    const total = afterDisc + tAmt;
+
+    subOut.textContent  = fmtUSD(sub);
+    discOut.textContent = fmtUSD(dAmt);
+    taxOut.textContent  = fmtUSD(tAmt);
+    totOut.textContent  = fmtUSD(total);
+  }
+  [price, qty, disc, tax].forEach(i=> i.addEventListener('input', recalc));
+  qty.value = 1; recalc();
+})();
+</script>
+</body>
+</html>
